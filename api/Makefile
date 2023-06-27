@@ -17,6 +17,8 @@ install-modules:
 	go get github.com/satori/go.uuid
 	go get github.com/spf13/viper
 	go get go.mongodb.org/mongo-driver/mongo 
+	go get go.mongodb.org/mongo-driver/bson
+
 
 help:
 	@echo "make dev 開啟開發場域"
