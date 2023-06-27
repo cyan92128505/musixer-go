@@ -10,6 +10,7 @@ type Config struct {
 	ServerPort   string `mapstructure:"PORT"`
 	ClientOrigin string `mapstructure:"CLIENT_ORIGIN"`
 	DBUrl        string `mapstructure:"DATABASE_URL"`
+	DBName       string `mapstructure:"MONGO_INITDB_DATABASE"`
 	RedisUri     string `mapstructure:"REDIS_URL"`
 
 	AccessTokenPrivateKey  string        `mapstructure:"ACCESS_TOKEN_PRIVATE_KEY"`
