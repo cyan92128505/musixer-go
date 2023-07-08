@@ -40,8 +40,8 @@ func DeserializeUser(c *fiber.Ctx) error {
 	}
 
 	var user models.User
-	collectionUser := initializers.DB.Database(config.DBName).Collection("users")
-	value := collectionUser.FindOne(ctx, bson.D{{
+	userCollection := initializers.DB.Database(config.DBName).Collection(models.UserCollectionName)
+	value := userCollection.FindOne(ctx, bson.D{{
 		Key:   "_id",
 		Value: userid,
 	}})

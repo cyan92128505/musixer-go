@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	ServerPort   string `mapstructure:"PORT"`
-	ClientOrigin string `mapstructure:"CLIENT_ORIGIN"`
-	DBUrl        string `mapstructure:"DATABASE_URL"`
-	DBName       string `mapstructure:"MONGO_INITDB_DATABASE"`
-	RedisUri     string `mapstructure:"REDIS_URL"`
+	ServerPort    string `mapstructure:"PORT"`
+	ClientOrigin  string `mapstructure:"CLIENT_ORIGIN"`
+	DBUrl         string `mapstructure:"DATABASE_URL"`
+	DBName        string `mapstructure:"MONGO_INITDB_DATABASE"`
+	RedisUri      string `mapstructure:"REDIS_URL"`
+	MusixmatchKey string `mapstructure:"MUSIXMATCH_API_KEY"`
 
 	AccessTokenPrivateKey  string        `mapstructure:"ACCESS_TOKEN_PRIVATE_KEY"`
 	AccessTokenPublicKey   string        `mapstructure:"ACCESS_TOKEN_PUBLIC_KEY"`
@@ -26,7 +27,7 @@ type Config struct {
 func LoadConfig(path string) (config Config, err error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigType("env")
-	viper.SetConfigName("app")
+	viper.SetConfigName(".env")
 
 	viper.AutomaticEnv()
 

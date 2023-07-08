@@ -3,30 +3,34 @@ package main
 import (
 	"fmt"
 	"log"
-
-	"github.com/gofiber/fiber/v2"
+	musixerApp "musixer/api/internal/app"
+	"os"
+	"os/signal"
+	"sync"
+	"time"
 )
 
 func main() {
-	app := fiber.New()
+	app := musixerApp.NewAPP()
 
-	// Match any route
-	app.Use(func(c *fiber.Ctx) error {
-		fmt.Println("🥇 First handler")
-		return c.Next()
-	})
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 
-	// Match all routes starting with /api
-	app.Use("/api", func(c *fiber.Ctx) error {
-		fmt.Println("🥈 Second handler")
-		return c.Next()
-	})
+	var serverShutdown sync.WaitGroup
 
-	// GET /api/list
-	app.Get("/api/list", func(c *fiber.Ctx) error {
-		fmt.Println("🥉 Last handler")
-		return c.SendString("Hello, World 👋!")
-	})
+	go func() {
+		_ = <-c
+		fmt.Println("Gracefully shutting down...")
+		serverShutdown.Add(1)
+		defer serverShutdown.Done()
+		_ = app.ShutdownWithTimeout(60 * time.Second)
+	}()
 
-	log.Fatal(app.Listen(":7000"))
+	if err := app.Listen(":7000"); err != nil {
+		log.Panic(err)
+	}
+
+	serverShutdown.Wait()
+
+	fmt.Println("Running cleanup tasks...")
 }
