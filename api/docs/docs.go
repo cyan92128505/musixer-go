@@ -359,12 +359,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "provider": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
                 "updated_at": {
                     "type": "string"
                 }

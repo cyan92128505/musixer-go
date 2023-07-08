@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"musixer/api/internal/app/initializers"
 	"musixer/api/internal/app/models"
 	"musixer/api/internal/app/utils"
@@ -9,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func DeserializeUser(c *fiber.Ctx) error {
@@ -29,22 +31,24 @@ func DeserializeUser(c *fiber.Ctx) error {
 
 	tokenClaims, err := utils.ValidateToken(access_token, config.AccessTokenPublicKey)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": "fail", "message": "ValidateTokenError:" + err.Error()})
 	}
 
-	userid, err := initializers.RedisClient.Get(c.UserContext(), tokenClaims.TokenUuid).Result()
+	userID, err := initializers.RedisClient.Get(c.UserContext(), tokenClaims.TokenUuid).Result()
 	if err == redis.Nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": "fail", "message": "Token is invalid or session has expired"})
 	}
 
+	objectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		log.Fatalf("轉換 _id 時發生錯誤：%s\n", err)
+	}
+
+	filter := bson.M{"_id": objectID}
 	var user models.User
-	userCollection := initializers.DB.Collection(models.UserCollectionName)
-	value := userCollection.FindOne(c.UserContext(), bson.D{{
-		Key:   "_id",
-		Value: userid,
-	}})
-	if value == nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": "fail", "message": "the user belonging to this token no logger exists"})
+	err = user.Find(c.UserContext(), initializers.DB, models.UserCollectionName, filter, &user)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	c.Locals("user", models.FilterUserRecord(&user))

@@ -91,7 +91,7 @@ func SignInUser(c *fiber.Ctx) error {
 
 	config, _ := initializers.LoadConfig(".")
 	filter := bson.M{"email": strings.ToLower(payload.Email)}
-	err := foundUser.Read(c.UserContext(), initializers.DB, models.UserCollectionName, filter, &foundUser)
+	err := foundUser.Find(c.UserContext(), initializers.DB, models.UserCollectionName, filter, &foundUser)
 
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": "DB Error " + err.Error()})
@@ -102,24 +102,24 @@ func SignInUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": "Password Error " + message})
 	}
 
-	accessTokenDetails, err := utils.CreateToken(foundUser.ID.String(), config.AccessTokenExpiresIn, config.AccessTokenPrivateKey)
+	accessTokenDetails, err := utils.CreateToken(foundUser.ID.Hex(), config.AccessTokenExpiresIn, config.AccessTokenPrivateKey)
 	if err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
-	refreshTokenDetails, err := utils.CreateToken(foundUser.ID.String(), config.RefreshTokenExpiresIn, config.RefreshTokenPrivateKey)
+	refreshTokenDetails, err := utils.CreateToken(foundUser.ID.Hex(), config.RefreshTokenExpiresIn, config.RefreshTokenPrivateKey)
 	if err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
 	now := time.Now()
 
-	errAccess := initializers.RedisClient.Set(c.UserContext(), accessTokenDetails.TokenUuid, foundUser.ID.String(), time.Unix(*accessTokenDetails.ExpiresIn, 0).Sub(now)).Err()
+	errAccess := initializers.RedisClient.Set(c.UserContext(), accessTokenDetails.TokenUuid, foundUser.ID.Hex(), time.Unix(*accessTokenDetails.ExpiresIn, 0).Sub(now)).Err()
 	if errAccess != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"status": "fail", "message": errAccess.Error()})
 	}
 
-	errRefresh := initializers.RedisClient.Set(c.UserContext(), refreshTokenDetails.TokenUuid, foundUser.ID.String(), time.Unix(*refreshTokenDetails.ExpiresIn, 0).Sub(now)).Err()
+	errRefresh := initializers.RedisClient.Set(c.UserContext(), refreshTokenDetails.TokenUuid, foundUser.ID.Hex(), time.Unix(*refreshTokenDetails.ExpiresIn, 0).Sub(now)).Err()
 	if errAccess != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"status": "fail", "message": errRefresh.Error()})
 	}
@@ -193,7 +193,7 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 	objectID, _ := primitive.ObjectIDFromHex(userID)
 	filter := bson.M{"_id": objectID}
 
-	err = user.Read(c.UserContext(), initializers.DB, models.UserCollectionName, filter, user)
+	err = user.Find(c.UserContext(), initializers.DB, models.UserCollectionName, filter, &user)
 
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
@@ -206,7 +206,7 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 
 	now := time.Now()
 
-	errAccess := initializers.RedisClient.Set(c.UserContext(), accessTokenDetails.TokenUuid, user.ID.String(), time.Unix(*accessTokenDetails.ExpiresIn, 0).Sub(now)).Err()
+	errAccess := initializers.RedisClient.Set(c.UserContext(), accessTokenDetails.TokenUuid, user.ID.Hex(), time.Unix(*accessTokenDetails.ExpiresIn, 0).Sub(now)).Err()
 	if errAccess != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"status": "fail", "message": errAccess.Error()})
 	}

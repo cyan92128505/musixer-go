@@ -13,13 +13,13 @@ import (
 var UserCollectionName = "users"
 
 type User struct {
-	BaseModel
-	Name     *string `json:"name" validate:"required,min=2,max=100"`
-	Email    *string `json:"email" validate:"email,required"`
-	Password *string `json:"password" validate:"required,min=6"`
-	Role     *string `json:"role"`
-	Provider *string `json:"provider"`
-	Verified *bool   `json:"verified"`
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+	Name      *string            `json:"name" validate:"required,min=2,max=100"`
+	Email     *string            `json:"email" validate:"email,required"`
+	Password  *string            `json:"password" validate:"required,min=6"`
+	Verified  *bool              `json:"verified"`
 }
 
 type SignUpInput struct {
@@ -38,8 +38,6 @@ type UserResponse struct {
 	ID        string    `json:"id,omitempty"`
 	Name      string    `json:"name,omitempty"`
 	Email     string    `json:"email,omitempty"`
-	Role      string    `json:"role,omitempty"`
-	Provider  string    `json:"provider"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -49,8 +47,6 @@ func FilterUserRecord(user *User) UserResponse {
 		ID:        user.ID.String(),
 		Name:      *user.Name,
 		Email:     *user.Email,
-		Role:      *user.Role,
-		Provider:  *user.Provider,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
@@ -74,5 +70,16 @@ func (user *User) Register(ctx context.Context, db *mongo.Database) error {
 	}
 
 	user.ID = res.InsertedID.(primitive.ObjectID)
+	return nil
+}
+
+func (m *User) Find(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, result *User) error {
+	collection := db.Collection(collectionName)
+
+	err := collection.FindOne(ctx, filter).Decode(result)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
