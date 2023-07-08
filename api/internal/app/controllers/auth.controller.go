@@ -153,8 +153,7 @@ func SignInUser(c *fiber.Ctx) error {
 		HTTPOnly: false,
 		Domain:   "localhost",
 	})
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "access_token": accessTokenDetails.Token})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "access_token": accessTokenDetails.Token, "user": foundUser})
 }
 
 // @Summary Refresh Access Token

@@ -13,6 +13,7 @@ type SuccessResponse struct {
 type TokenResponse struct {
 	SuccessResponse
 	AccessToken string `json:"access_token"`
+	User        User   `json:"user"`
 }
 
 type ErrorResponse struct {

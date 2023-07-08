@@ -47,6 +47,32 @@ definitions:
         type: string
       status:
         type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.User:
+    properties:
+      _id:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 6
+        type: string
+      updated_at:
+        type: string
+      verified:
+        type: boolean
+    required:
+    - email
+    - name
+    - password
     type: object
   models.UserResponse:
     properties:
