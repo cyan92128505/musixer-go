@@ -64,7 +64,7 @@ export const LoginView: React.FC = () => {
                   <Logo></Logo>
                   <Input
                     type="email"
-                    placeholder="Last name"
+                    placeholder="Email"
                     {...register("email", {
                       required: "Please enter email",
                       minLength: 3,
