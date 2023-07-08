@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"musixer/api/internal/app/initializers"
 	"musixer/api/internal/app/models"
 	"musixer/api/internal/app/utils"
@@ -33,15 +32,14 @@ func DeserializeUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
-	ctx := context.TODO()
-	userid, err := initializers.RedisClient.Get(ctx, tokenClaims.TokenUuid).Result()
+	userid, err := initializers.RedisClient.Get(c.UserContext(), tokenClaims.TokenUuid).Result()
 	if err == redis.Nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"status": "fail", "message": "Token is invalid or session has expired"})
 	}
 
 	var user models.User
-	userCollection := initializers.DB.Database(config.DBName).Collection(models.UserCollectionName)
-	value := userCollection.FindOne(ctx, bson.D{{
+	userCollection := initializers.DB.Collection(models.UserCollectionName)
+	value := userCollection.FindOne(c.UserContext(), bson.D{{
 		Key:   "_id",
 		Value: userid,
 	}})

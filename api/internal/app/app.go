@@ -1,24 +1,13 @@
 package app
 
 import (
-	"log"
-
 	_ "musixer/api/docs"
-	"musixer/api/internal/app/initializers"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 )
-
-func init() {
-	config, err := initializers.LoadConfig(".")
-	if err != nil {
-		log.Fatalln("Failed to load environment variables! \n", err.Error())
-	}
-	initializers.ConnectDB(&config)
-}
 
 // @title Musixer
 // @version 1.0
@@ -30,6 +19,9 @@ func init() {
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:7000
 // @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name access_token
 func NewAPP() (app *fiber.App) {
 	app = fiber.New()
 

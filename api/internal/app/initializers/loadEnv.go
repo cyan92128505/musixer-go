@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	AppEnv        string `mapstructure:"APP_ENV"`
 	ServerPort    string `mapstructure:"PORT"`
 	ClientOrigin  string `mapstructure:"CLIENT_ORIGIN"`
 	DBUrl         string `mapstructure:"DATABASE_URL"`

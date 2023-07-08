@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -61,4 +62,36 @@ func (m *BaseModel) Delete(ctx context.Context, db *mongo.Database, collectionNa
 	}
 
 	return nil
+}
+
+var validate = validator.New()
+
+type SuccessResponse struct {
+	Status string `json:"status"`
+}
+
+type TokenResponse struct {
+	SuccessResponse
+	AccessToken string `json:"access_token"`
+}
+
+type ErrorResponse struct {
+	Field string `json:"field"`
+	Tag   string `json:"tag"`
+	Value string `json:"value,omitempty"`
+}
+
+func ValidateStruct[T any](payload T) []*ErrorResponse {
+	var errors []*ErrorResponse
+	err := validate.Struct(payload)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element ErrorResponse
+			element.Field = err.StructNamespace()
+			element.Tag = err.Tag()
+			element.Value = err.Param()
+			errors = append(errors, &element)
+		}
+	}
+	return errors
 }

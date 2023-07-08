@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"musixer/api/internal/app/initializers"
 	"musixer/api/internal/app/models"
 	"musixer/api/internal/app/utils"
@@ -15,6 +14,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// @Summary SignUp User
+// @Description Register a new user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param payload body models.SignUpInput true "User data"
+// @Success 201 {object} models.UserResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 502 {object} models.ErrorResponse
+// @Router /api/auth/signup [post]
 func SignUpUser(c *fiber.Ctx) error {
 	var payload *models.SignUpInput
 
@@ -46,20 +55,29 @@ func SignUpUser(c *fiber.Ctx) error {
 		Password: &rawPassword,
 	}
 
-	config, _ := initializers.LoadConfig(".")
-	db := initializers.DB.Database(config.DBName)
-	err = newUser.Register(c.UserContext(), db)
+	err = newUser.Register(c.UserContext(), initializers.DB)
 	if err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": "Something bad happened"})
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": "ERROR:" + err.Error()})
 	}
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "success", "data": fiber.Map{"user": models.FilterUserRecord(&newUser)}})
 }
 
+// @Summary Sign In User
+// @Description Sign in with email and password
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param payload body models.SignInInput true "User credentials"
+// @Success 200 {object} models.TokenResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 422 {object} models.ErrorResponse
+// @Failure 502 {object} models.ErrorResponse
+// @Router /api/auth/signin [post]
 func SignInUser(c *fiber.Ctx) error {
 	var payload *models.SignInInput
 
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": "BodyParser " + err.Error()})
 	}
 
 	errors := models.ValidateStruct(payload)
@@ -72,18 +90,16 @@ func SignInUser(c *fiber.Ctx) error {
 	var foundUser models.User
 
 	config, _ := initializers.LoadConfig(".")
-	db := initializers.DB.Database(config.DBName)
 	filter := bson.M{"email": strings.ToLower(payload.Email)}
-	err := foundUser.Read(c.UserContext(), db, models.UserCollectionName, filter, &foundUser)
+	err := foundUser.Read(c.UserContext(), initializers.DB, models.UserCollectionName, filter, &foundUser)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
-
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": "DB Error " + err.Error()})
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(*foundUser.Password), []byte(payload.Password))
 	if err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": message})
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": "Password Error " + message})
 	}
 
 	accessTokenDetails, err := utils.CreateToken(foundUser.ID.String(), config.AccessTokenExpiresIn, config.AccessTokenPrivateKey)
@@ -141,6 +157,17 @@ func SignInUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "access_token": accessTokenDetails.Token})
 }
 
+// @Summary Refresh Access Token
+// @Description Refresh the access token using a refresh token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} models.TokenResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 502 {object} models.ErrorResponse
+// @Router /api/auth/refresh [get]
 func RefreshAccessToken(c *fiber.Ctx) error {
 	message := "could not refresh access token"
 
@@ -163,11 +190,10 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 
 	var user models.User
 
-	db := initializers.DB.Database(config.DBName)
 	objectID, _ := primitive.ObjectIDFromHex(userID)
 	filter := bson.M{"_id": objectID}
 
-	err = user.Read(c.UserContext(), db, models.UserCollectionName, filter, user)
+	err = user.Read(c.UserContext(), initializers.DB, models.UserCollectionName, filter, user)
 
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
@@ -208,6 +234,16 @@ func RefreshAccessToken(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "access_token": accessTokenDetails.Token})
 }
 
+// @Description Logout a user by invalidating access and refresh tokens
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 502 {object} models.ErrorResponse
+// @Router /api/auth/logout [get]
 func LogoutUser(c *fiber.Ctx) error {
 	message := "Token is invalid or session has expired"
 
@@ -218,7 +254,6 @@ func LogoutUser(c *fiber.Ctx) error {
 	}
 
 	config, _ := initializers.LoadConfig(".")
-	ctx := context.TODO()
 
 	tokenClaims, err := utils.ValidateToken(refresh_token, config.RefreshTokenPublicKey)
 	if err != nil {
@@ -226,7 +261,7 @@ func LogoutUser(c *fiber.Ctx) error {
 	}
 
 	access_token_uuid := c.Locals("access_token_uuid").(string)
-	_, err = initializers.RedisClient.Del(ctx, tokenClaims.TokenUuid, access_token_uuid).Result()
+	_, err = initializers.RedisClient.Del(c.UserContext(), tokenClaims.TokenUuid, access_token_uuid).Result()
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}

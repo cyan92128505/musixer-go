@@ -14,19 +14,22 @@ var (
 
 func ConnectRedis(config *Config) {
 	ctx = context.TODO()
+	opt, err := redis.ParseURL(config.RedisUri)
 
-	RedisClient = redis.NewClient(&redis.Options{
-		Addr: config.RedisUri,
-	})
+	if err != nil {
+		panic(err)
+	}
+
+	RedisClient = redis.NewClient(opt)
 
 	if _, err := RedisClient.Ping(ctx).Result(); err != nil {
 		panic(err)
 	}
 
-	err := RedisClient.Set(ctx, "test", "How to Refresh Access Tokens the Right Way in Golang", 0).Err()
+	err = RedisClient.Set(ctx, "test", "How to Refresh Access Tokens the Right Way in Golang", 0).Err()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("✅ Redis client connected successfully...")
+	fmt.Println("Redis connected!")
 }

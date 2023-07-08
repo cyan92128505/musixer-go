@@ -13,8 +13,8 @@ func NewAPI() (app *fiber.App) {
 	app = fiber.New()
 
 	app.Route("/auth", func(router fiber.Router) {
-		router.Post("/register", controllers.SignUpUser)
-		router.Post("/login", controllers.SignInUser)
+		router.Post("/signup", controllers.SignUpUser)
+		router.Post("/signin", controllers.SignInUser)
 		router.Get("/refresh", controllers.RefreshAccessToken)
 		router.Get("/logout", middleware.DeserializeUser, controllers.LogoutUser)
 	})

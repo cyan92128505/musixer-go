@@ -13,56 +13,25 @@ import (
 	migrate "github.com/xakep666/mongo-migrate"
 )
 
-var DB *mongo.Client
-
-func close(client *mongo.Client, ctx context.Context,
-	cancel context.CancelFunc) {
-
-	defer cancel()
-
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
-}
-
-func connect(uri string) (*mongo.Client, context.Context,
-	context.CancelFunc, error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(),
-		30*time.Second)
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-
-	return client, ctx, cancel, err
-}
-
-func ping(client *mongo.Client, ctx context.Context) error {
-
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		return err
-	}
-
-	fmt.Println("connected successfully")
-	return nil
-}
+var DB *mongo.Database
 
 func ConnectDB(config *Config) {
-	var err error
-	DB, ctx, cancel, err := connect(config.DBUrl)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.DBUrl))
+
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	defer close(DB, ctx, cancel)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	err = ping(DB, ctx)
+	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	log.Println("🚀 Connected Successfully to the Database")
+	fmt.Println("Database connected!")
+	DB = client.Database(config.DBName)
 }
 
 func Migration(db *mongo.Database) (*mongo.Database, error) {
