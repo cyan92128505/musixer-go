@@ -1,21 +1,24 @@
-.PHONY: dev-up dev-down dev start-api test docs help
+.PHONY: dev-up dev-down dev start test docs build help
 
 dev-up: 
-	podman-compose up -d
+	@podman-compose up -d
 
 dev-down:
-	podman-compose down
-
-start:
-	go run ./cmd/main.go
-
-docs:
-	swag init --generalInfo ./cmd/main.go   
+	@podman-compose down
 
 dev: docs start
 
+start:
+	@go run ./cmd/main.go
+
 test: 
-	go test ./...
+	@go test ./...
+
+docs:
+	@swag init --generalInfo ./cmd/main.go   
+
+build:
+	@go build -o build/service ./cmd/main.go
 
 help:
 	@echo "make dev-up 開啟開發場域"
