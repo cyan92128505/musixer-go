@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+
+	migrate "github.com/xakep666/mongo-migrate"
 )
 
 var DB *mongo.Client
@@ -33,6 +34,7 @@ func connect(uri string) (*mongo.Client, context.Context,
 		30*time.Second)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+
 	return client, ctx, cancel, err
 }
 
@@ -48,9 +50,7 @@ func ping(client *mongo.Client, ctx context.Context) error {
 
 func ConnectDB(config *Config) {
 	var err error
-	mongoConnectionString := os.Getenv("DATABASE_URL")
-
-	DB, ctx, cancel, err := connect(mongoConnectionString)
+	DB, ctx, cancel, err := connect(config.DBUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -63,4 +63,12 @@ func ConnectDB(config *Config) {
 	}
 
 	log.Println("🚀 Connected Successfully to the Database")
+}
+
+func Migration(db *mongo.Database) (*mongo.Database, error) {
+	migrate.SetDatabase(db)
+	if err := migrate.Up(migrate.AllAvailable); err != nil {
+		return nil, err
+	}
+	return db, nil
 }

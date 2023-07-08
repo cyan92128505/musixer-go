@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
+	"musixer/api/internal/app/initializers"
 
 	_ "github.com/joho/godotenv/autoload"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,10 +12,13 @@ import (
 )
 
 func main() {
-	mongoConnectionString := os.Getenv("DATABASE_URL")
+	config, err := initializers.LoadConfig(".")
+	if err != nil {
+		log.Fatalln("Failed to load environment variables! \n", err.Error())
+	}
 
 	// Set client options
-	clientOptions := options.Client().ApplyURI(mongoConnectionString)
+	clientOptions := options.Client().ApplyURI(config.DBUrl)
 
 	// Connect to MongoDB
 	client, err := mongo.Connect(context.Background(), clientOptions)
