@@ -82,3 +82,5 @@ require (
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 )
+
+require github.com/go-resty/resty/v2 v2.7.0
